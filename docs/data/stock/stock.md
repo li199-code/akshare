@@ -16062,6 +16062,55 @@ print(stock_industry_clf_hist_sw_df)
 [12365 rows x 4 columns]
 ```
 
+##### 申万个股行业分类明细
+
+接口: stock_industry_clf_detail_sw
+
+目标地址: https://www.swsresearch.com/swindex/pdf/SwClass2021/StockClassifyUse_stock.xls
+
+描述: 申万宏源研究-行业分类-全部 A 股当前申万行业分类明细
+
+限量: 单次获取全部 A 股当前最新的申万行业分类明细
+
+输入参数
+
+| 名称 | 类型 | 描述 |
+|----|----|----|
+| -  | -  | -  |
+
+输出参数
+
+| 名称                    | 类型     | 描述          |
+|-----------------------|--------|-------------|
+| symbol                | object | 股票代码        |
+| name                  | object | 股票简称        |
+| industry_code         | object | 申万行业代码      |
+| industry_name_level_1 | object | 申万一级行业名称    |
+| industry_name_level_2 | object | 申万二级行业名称    |
+| industry_name_level_3 | object | 申万三级行业名称    |
+| industry_name_level_4 | object | 申万四级行业名称/细分 |
+| change_date           | object | 最新变更日期      |
+| standard              | object | 分类标准        |
+
+接口示例
+
+```python
+import akshare as ak
+
+stock_industry_clf_detail_sw_df = ak.stock_industry_clf_detail_sw()
+print(stock_industry_clf_detail_sw_df)
+```
+
+数据示例
+
+```
+   symbol  name industry_code industry_name_level_1 industry_name_level_2 industry_name_level_3 industry_name_level_4 change_date     standard
+0  000001  平安银行      S480301                  银行               股份制银行Ⅱ              股份制银行Ⅲ              股份制银行Ⅲ  2021-07-30  申银万国行业分类标准
+1  000002 万  科Ａ      S430101                房地产                  住宅开发                 住宅开发                 住宅开发  2021-07-30  申银万国行业分类标准
+2  000004  国华网安      S750301                 计算机                 软件开发                 软件开发                 垂直应用软件  2021-07-30  申银万国行业分类标准
+...
+```
+
 ##### 行业市盈率
 
 接口: stock_industry_pe_ratio_cninfo
