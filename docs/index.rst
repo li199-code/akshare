@@ -35,6 +35,7 @@
    platform
    demo
    changelog
+   fork_sync
    contributing
    dependency
    deploy_http
