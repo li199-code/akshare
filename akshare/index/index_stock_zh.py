@@ -21,9 +21,30 @@ from akshare.index.cons import (
     zh_sina_index_stock_hist_url,
 )
 from akshare.stock.cons import hk_js_decode
+from akshare.stock.stock_xq import stock_individual_spot_xq
 from akshare.utils import demjson
 from akshare.utils.func import fetch_paginated_data
 from akshare.utils.tqdm import get_tqdm
+
+
+_ZH_INDEX_SPOT_STABLE_COLUMNS = [
+    "序号",
+    "代码",
+    "名称",
+    "最新价",
+    "涨跌幅",
+    "涨跌额",
+    "成交量",
+    "成交额",
+    "振幅",
+    "最高",
+    "最低",
+    "今开",
+    "昨收",
+    "量比",
+    "数据来源",
+    "更新时间",
+]
 
 
 def _replace_comma(x):
@@ -288,6 +309,500 @@ def stock_zh_index_spot_em(symbol: str = "上证系列指数") -> pd.DataFrame:
     temp_df["昨收"] = pd.to_numeric(temp_df["昨收"], errors="coerce")
     temp_df["量比"] = pd.to_numeric(temp_df["量比"], errors="coerce")
     return temp_df
+
+
+def _stock_zh_index_spot_realtime_empty() -> pd.DataFrame:
+    """
+    股票指数-单指数实时行情-空数据结构
+    :return: 空数据
+    :rtype: pandas.DataFrame
+    """
+    return pd.DataFrame(columns=_ZH_INDEX_SPOT_STABLE_COLUMNS)
+
+
+def _stock_zh_index_spot_xq_symbol(symbol: str) -> str:
+    """
+    雪球-指数代码
+    :param symbol: 指数代码; e.g., 000905, csi000905, sh000001, sz399001
+    :type symbol: str
+    :return: 雪球指数代码
+    :rtype: str
+    """
+    symbol = symbol.strip()
+    lower_symbol = symbol.lower()
+
+    if lower_symbol.startswith(("sh", "sz", "bj")):
+        return lower_symbol.upper()
+    if lower_symbol.startswith("csi"):
+        symbol = symbol[3:]
+    if symbol.startswith(("399", "980")):
+        return f"SZ{symbol}"
+    return f"SH{symbol}"
+
+
+def _stock_zh_index_spot_tx_symbol(symbol: str) -> str:
+    """
+    腾讯-指数代码
+    :param symbol: 指数代码; e.g., 000905, csi000905, sh000001, sz399001
+    :type symbol: str
+    :return: 腾讯指数代码
+    :rtype: str
+    """
+    symbol = symbol.strip()
+    lower_symbol = symbol.lower()
+
+    if lower_symbol.startswith(("sh", "sz")):
+        return lower_symbol
+    if lower_symbol.startswith("csi"):
+        symbol = symbol[3:]
+    if symbol.startswith(("399", "980")):
+        return f"sz{symbol}"
+    return f"sh{symbol}"
+
+
+def _stock_zh_index_spot_em_sina_symbol(symbol: str) -> str:
+    """
+    新浪-指数代码
+    :param symbol: 指数代码; e.g., 000905, sh000001, sz399001
+    :type symbol: str
+    :return: 带市场前缀的新浪指数代码
+    :rtype: str
+    """
+    symbol = symbol.strip()
+    lower_symbol = symbol.lower()
+
+    if lower_symbol.startswith(("sh", "sz")):
+        return lower_symbol
+    if lower_symbol.startswith("csi"):
+        symbol = symbol[3:]
+
+    if symbol.startswith(("399", "980")):
+        return f"sz{symbol}"
+    return f"sh{symbol}"
+
+
+def _stock_zh_index_spot_csindex_symbol(symbol: str) -> str:
+    """
+    中证官网-指数代码
+    :param symbol: 指数代码; e.g., 930955, csi930955, sh000905, sz399001
+    :type symbol: str
+    :return: 中证官网指数代码
+    :rtype: str
+    """
+    symbol = symbol.strip()
+    lower_symbol = symbol.lower()
+
+    if lower_symbol.startswith(("sh", "sz")):
+        return symbol[2:].upper()
+    if lower_symbol.startswith("csi"):
+        return symbol[3:].upper()
+    return symbol.upper()
+
+
+def _stock_zh_index_spot_realtime_to_numeric(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    中证指数-单指数实时行情-字段类型转换
+    :param df: 原始数据
+    :type df: pandas.DataFrame
+    :return: 类型转换后的数据
+    :rtype: pandas.DataFrame
+    """
+    numeric_columns = [
+        "最新价",
+        "涨跌幅",
+        "涨跌额",
+        "成交量",
+        "成交额",
+        "振幅",
+        "最高",
+        "最低",
+        "今开",
+        "昨收",
+        "量比",
+    ]
+    for item in numeric_columns:
+        df[item] = pd.to_numeric(df[item], errors="coerce")
+    return df
+
+
+def _stock_zh_index_spot_from_csindex_json(
+    data_json: dict, symbol: str
+) -> pd.DataFrame:
+    """
+    中证官网-指数实时行情-结果转换
+    :param data_json: 中证官网实时行情 JSON
+    :type data_json: dict
+    :param symbol: 指数代码
+    :type symbol: str
+    :return: 指数实时行情
+    :rtype: pandas.DataFrame
+    """
+    if str(data_json.get("code")) != "200":
+        return _stock_zh_index_spot_realtime_empty()
+
+    data = data_json.get("data") or {}
+    header = data.get("intraDayHeader") or {}
+    perf_list = data.get("intraDayPerfList") or []
+    if not header:
+        return _stock_zh_index_spot_realtime_empty()
+
+    name = None
+    high = None
+    low = None
+    if perf_list:
+        name = perf_list[0].get("indexName")
+        high_list = [
+            pd.to_numeric(item.get("high"), errors="coerce")
+            for item in perf_list
+            if item.get("high") is not None
+        ]
+        low_list = [
+            pd.to_numeric(item.get("low"), errors="coerce")
+            for item in perf_list
+            if item.get("low") is not None
+        ]
+        high_list = [item for item in high_list if pd.notna(item)]
+        low_list = [item for item in low_list if pd.notna(item)]
+        high = max(
+            high_list,
+            default=None,
+        )
+        low = min(
+            low_list,
+            default=None,
+        )
+
+    yesterday_close = pd.to_numeric(header.get("closePre"), errors="coerce")
+    amplitude = (
+        round((high - low) / yesterday_close * 100, 2)
+        if high is not None
+        and low is not None
+        and yesterday_close
+        and pd.notna(yesterday_close)
+        else None
+    )
+    trading_value = pd.to_numeric(header.get("tradingValue"), errors="coerce")
+    trading_value = (
+        trading_value * 100000000 if pd.notna(trading_value) else trading_value
+    )
+    update_time = None
+    if header.get("tradeDate") and header.get("tradeTime"):
+        update_time = f"{header.get('tradeDate')} {header.get('tradeTime')}"
+
+    result_df = pd.DataFrame(
+        [
+            {
+                "序号": 1,
+                "代码": header.get(
+                    "indexCode",
+                    _stock_zh_index_spot_csindex_symbol(symbol=symbol),
+                ),
+                "名称": name,
+                "最新价": header.get("current"),
+                "涨跌幅": header.get("changePct"),
+                "涨跌额": header.get("change"),
+                "成交量": header.get("tradingVol"),
+                "成交额": trading_value,
+                "振幅": amplitude,
+                "最高": high,
+                "最低": low,
+                "今开": header.get("openToday"),
+                "昨收": header.get("closePre"),
+                "量比": None,
+                "数据来源": "中证官网-盘中行情",
+                "更新时间": update_time,
+            }
+        ],
+        columns=_ZH_INDEX_SPOT_STABLE_COLUMNS,
+    )
+    result_df = _stock_zh_index_spot_realtime_to_numeric(result_df)
+    if result_df["最新价"].isna().all() or result_df["代码"].isna().all():
+        return _stock_zh_index_spot_realtime_empty()
+    return result_df
+
+
+def _stock_zh_index_spot_from_xq_items(
+    temp_df: pd.DataFrame, symbol: str
+) -> pd.DataFrame:
+    """
+    雪球-指数实时行情-结果转换
+    :param temp_df: 雪球单证券实时行情
+    :type temp_df: pandas.DataFrame
+    :param symbol: 指数代码
+    :type symbol: str
+    :return: 指数实时行情
+    :rtype: pandas.DataFrame
+    """
+    if temp_df.empty:
+        return _stock_zh_index_spot_realtime_empty()
+
+    item_map = dict(zip(temp_df["item"], temp_df["value"]))
+    code = str(item_map.get("代码") or _stock_zh_index_spot_xq_symbol(symbol=symbol))
+    code = code[2:] if code[:2].upper() in {"SH", "SZ", "BJ"} else code
+
+    result_df = pd.DataFrame(
+        [
+            {
+                "序号": 1,
+                "代码": code,
+                "名称": item_map.get("名称"),
+                "最新价": item_map.get("现价"),
+                "涨跌幅": item_map.get("涨幅"),
+                "涨跌额": item_map.get("涨跌"),
+                "成交量": item_map.get("成交量"),
+                "成交额": item_map.get("成交额"),
+                "振幅": item_map.get("振幅"),
+                "最高": item_map.get("最高"),
+                "最低": item_map.get("最低"),
+                "今开": item_map.get("今开"),
+                "昨收": item_map.get("昨收"),
+                "量比": None,
+                "数据来源": "雪球-实时行情",
+                "更新时间": item_map.get("时间"),
+            }
+        ],
+        columns=_ZH_INDEX_SPOT_STABLE_COLUMNS,
+    )
+    result_df = _stock_zh_index_spot_realtime_to_numeric(result_df)
+    if result_df["最新价"].isna().all() or result_df["代码"].isna().all():
+        return _stock_zh_index_spot_realtime_empty()
+    return result_df
+
+
+def _stock_zh_index_spot_from_sina(
+    temp_df: pd.DataFrame, symbol: str
+) -> pd.DataFrame:
+    """
+    新浪-指数实时行情-结果转换
+    :param temp_df: 新浪所有指数实时行情
+    :type temp_df: pandas.DataFrame
+    :param symbol: 指数代码
+    :type symbol: str
+    :return: 指数实时行情
+    :rtype: pandas.DataFrame
+    """
+    sina_symbol = _stock_zh_index_spot_em_sina_symbol(symbol=symbol)
+    code = sina_symbol[2:]
+    match_df = temp_df[
+        (temp_df["代码"].astype(str).str.lower() == sina_symbol)
+        | (temp_df["代码"].astype(str).str[-6:] == code)
+    ]
+    if match_df.empty:
+        return _stock_zh_index_spot_realtime_empty()
+
+    row = match_df.iloc[0]
+    yesterday_close = pd.to_numeric(row["昨收"], errors="coerce")
+    high = pd.to_numeric(row["最高"], errors="coerce")
+    low = pd.to_numeric(row["最低"], errors="coerce")
+    amplitude = (
+        round((high - low) / yesterday_close * 100, 2)
+        if yesterday_close and pd.notna(yesterday_close)
+        else None
+    )
+    result_df = pd.DataFrame(
+        [
+            {
+                "序号": 1,
+                "代码": code,
+                "名称": row["名称"],
+                "最新价": row["最新价"],
+                "涨跌幅": row["涨跌幅"],
+                "涨跌额": row["涨跌额"],
+                "成交量": row["成交量"],
+                "成交额": row["成交额"],
+                "振幅": amplitude,
+                "最高": row["最高"],
+                "最低": row["最低"],
+                "今开": row["今开"],
+                "昨收": row["昨收"],
+                "量比": None,
+                "数据来源": "新浪-实时行情",
+                "更新时间": None,
+            }
+        ],
+        columns=_ZH_INDEX_SPOT_STABLE_COLUMNS,
+    )
+    return _stock_zh_index_spot_realtime_to_numeric(result_df)
+
+
+def _stock_zh_index_spot_from_tx_text(text: str) -> pd.DataFrame:
+    """
+    腾讯-指数实时行情-结果转换
+    :param text: 腾讯实时行情文本
+    :type text: str
+    :return: 指数实时行情
+    :rtype: pandas.DataFrame
+    """
+    if '="' not in text:
+        return _stock_zh_index_spot_realtime_empty()
+
+    data_text = text.split('="', 1)[1].rsplit('"', 1)[0]
+    data_list = data_text.split("~")
+    if len(data_list) < 35:
+        return _stock_zh_index_spot_realtime_empty()
+
+    amount = None
+    if len(data_list) > 35 and "/" in data_list[35]:
+        amount_list = data_list[35].split("/")
+        if len(amount_list) >= 3:
+            amount = amount_list[2]
+    if amount is None and len(data_list) > 37:
+        amount = pd.to_numeric(data_list[37], errors="coerce") * 10000
+
+    result_df = pd.DataFrame(
+        [
+            {
+                "序号": 1,
+                "代码": data_list[2],
+                "名称": data_list[1],
+                "最新价": data_list[3],
+                "涨跌幅": data_list[32] if len(data_list) > 32 else None,
+                "涨跌额": data_list[31] if len(data_list) > 31 else None,
+                "成交量": data_list[6],
+                "成交额": amount,
+                "振幅": data_list[43] if len(data_list) > 43 else None,
+                "最高": data_list[33] if len(data_list) > 33 else None,
+                "最低": data_list[34] if len(data_list) > 34 else None,
+                "今开": data_list[5],
+                "昨收": data_list[4],
+                "量比": None,
+                "数据来源": "腾讯-实时行情",
+                "更新时间": data_list[30] if len(data_list) > 30 else None,
+            }
+        ],
+        columns=_ZH_INDEX_SPOT_STABLE_COLUMNS,
+    )
+    result_df = _stock_zh_index_spot_realtime_to_numeric(result_df)
+    if result_df["最新价"].isna().all() or result_df["代码"].isna().all():
+        return _stock_zh_index_spot_realtime_empty()
+    return result_df
+
+
+def stock_zh_index_spot_xq(
+    symbol: str = "000905", token: str = None, timeout: float = None
+) -> pd.DataFrame:
+    """
+    雪球-股票指数-单指数实时行情
+    https://xueqiu.com/S/SH000905
+    :param symbol: 指数代码; e.g., 000905, csi000905, sh000001, sz399001
+    :type symbol: str
+    :param token: 雪球财经的 token
+    :type token: str
+    :param timeout: 请求超时时间
+    :type timeout: float
+    :return: 指数行情数据
+    :rtype: pandas.DataFrame
+    """
+    xq_symbol = _stock_zh_index_spot_xq_symbol(symbol=symbol)
+    return _stock_zh_index_spot_from_xq_items(
+        temp_df=stock_individual_spot_xq(
+            symbol=xq_symbol, token=token, timeout=timeout
+        ),
+        symbol=symbol,
+    )
+
+
+def stock_zh_index_spot_tx(
+    symbol: str = "000905", timeout: float = None
+) -> pd.DataFrame:
+    """
+    腾讯-股票指数-单指数实时行情
+    https://gu.qq.com/sh000905/zs
+    :param symbol: 指数代码; e.g., 000905, csi000905, sh000001, sz399001
+    :type symbol: str
+    :param timeout: 请求超时时间
+    :type timeout: float
+    :return: 指数行情数据
+    :rtype: pandas.DataFrame
+    """
+    tx_symbol = _stock_zh_index_spot_tx_symbol(symbol=symbol)
+    url = "https://qt.gtimg.cn/q={}".format(tx_symbol)
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "https://gu.qq.com/{}/zs".format(tx_symbol),
+    }
+    r = requests.get(url, headers=headers, timeout=timeout)
+    r.encoding = "GBK"
+    return _stock_zh_index_spot_from_tx_text(r.text)
+
+
+def stock_zh_index_spot_csindex(
+    symbol: str = "930955", timeout: float = None
+) -> pd.DataFrame:
+    """
+    中证官网-股票指数-单指数盘中行情
+    https://www.csindex.com.cn
+    :param symbol: 指数代码; e.g., 930955, csi930955, sh000905, sz399001
+    :type symbol: str
+    :param timeout: 请求超时时间
+    :type timeout: float
+    :return: 指数行情数据
+    :rtype: pandas.DataFrame
+    """
+    csindex_symbol = _stock_zh_index_spot_csindex_symbol(symbol=symbol)
+    url = "https://www.csindex.com.cn/csindex-home/perf/index-perf-oneday"
+    params = {"indexCode": csindex_symbol}
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "https://www.csindex.com.cn/",
+        "Accept": "application/json, text/plain, */*",
+    }
+    r = requests.get(url, params=params, headers=headers, timeout=timeout)
+    data_json = r.json()
+    return _stock_zh_index_spot_from_csindex_json(
+        data_json=data_json, symbol=symbol
+    )
+
+
+def stock_zh_index_spot_realtime(
+    symbol: str = "000905", token: str = None, timeout: float = None
+) -> pd.DataFrame:
+    """
+    股票指数-单指数实时行情
+    先使用腾讯实时行情; 若失败, 回退到中证官网盘中行情、雪球和新浪实时行情; 仍失败时返回空表, 不使用东方财富和日频数据。
+    https://gu.qq.com/sh000905/zs
+    :param symbol: 指数代码; e.g., 930955, 000905, csi000905, sh000001, sz399001
+    :type symbol: str
+    :param token: 雪球财经的 token
+    :type token: str
+    :param timeout: 请求超时时间
+    :type timeout: float
+    :return: 指数行情数据
+    :rtype: pandas.DataFrame
+    """
+    try:
+        temp_df = stock_zh_index_spot_tx(symbol=symbol, timeout=timeout)
+        if not temp_df.empty:
+            return temp_df
+    except Exception:  # noqa: PERF203
+        pass
+
+    try:
+        temp_df = stock_zh_index_spot_csindex(symbol=symbol, timeout=timeout)
+        if not temp_df.empty:
+            return temp_df
+    except Exception:  # noqa: PERF203
+        pass
+
+    try:
+        temp_df = stock_zh_index_spot_xq(
+            symbol=symbol, token=token, timeout=timeout
+        )
+        if not temp_df.empty:
+            return temp_df
+    except Exception:  # noqa: PERF203
+        pass
+
+    try:
+        temp_df = _stock_zh_index_spot_from_sina(
+            temp_df=stock_zh_index_spot_sina(), symbol=symbol
+        )
+        if not temp_df.empty:
+            return temp_df
+    except Exception:  # noqa: PERF203
+        pass
+
+    return _stock_zh_index_spot_realtime_empty()
 
 
 def stock_zh_index_daily(symbol: str = "sh000922") -> pd.DataFrame:

@@ -64,6 +64,139 @@ print(stock_zh_index_spot_em_df)
 [179 rows x 14 columns]
 ```
 
+#### 单指数实时行情数据-腾讯
+
+接口: stock_zh_index_spot_tx
+
+目标地址: https://gu.qq.com/sh000905/zs
+
+描述: 腾讯-股票指数-单指数实时行情
+
+限量: 单次返回指定指数的一行行情数据
+
+输入参数
+
+| 名称      | 类型    | 描述                                          |
+|---------|-------|---------------------------------------------|
+| symbol  | str   | symbol="000905"; 支持 000905, csi000905, sh000001, sz399001 |
+| timeout | float | 请求超时时间, 单位为秒                                |
+
+输出参数
+
+| 名称   | 类型      | 描述                    |
+|------|---------|-----------------------|
+| 序号   | int64   | -                     |
+| 代码   | object  | -                     |
+| 名称   | object  | -                     |
+| 最新价  | float64 | -                     |
+| 涨跌幅  | float64 | 注意单位: %              |
+| 涨跌额  | float64 | -                     |
+| 成交量  | float64 | -                     |
+| 成交额  | float64 | -                     |
+| 振幅   | float64 | 注意单位: %              |
+| 最高   | float64 | -                     |
+| 最低   | float64 | -                     |
+| 今开   | float64 | -                     |
+| 昨收   | float64 | -                     |
+| 量比   | float64 | 部分实时数据源为空             |
+| 数据来源 | object  | 数据来源                  |
+| 更新时间 | object  | -                     |
+
+接口示例
+
+```python
+import akshare as ak
+
+stock_zh_index_spot_tx_df = ak.stock_zh_index_spot_tx(symbol="000905")
+print(stock_zh_index_spot_tx_df)
+```
+
+#### 单指数盘中行情数据-中证官网
+
+接口: stock_zh_index_spot_csindex
+
+目标地址: https://www.csindex.com.cn/csindex-home/perf/index-perf-oneday
+
+描述: 中证官网-股票指数-单指数盘中行情
+
+限量: 单次返回指定指数的一行行情数据
+
+输入参数
+
+| 名称      | 类型    | 描述                                          |
+|---------|-------|---------------------------------------------|
+| symbol  | str   | symbol="930955"; 支持 930955, csi930955, sh000905, sz399001 |
+| timeout | float | 请求超时时间, 单位为秒                                |
+
+输出参数同 `stock_zh_index_spot_tx`
+
+接口示例
+
+```python
+import akshare as ak
+
+stock_zh_index_spot_csindex_df = ak.stock_zh_index_spot_csindex(symbol="930955")
+print(stock_zh_index_spot_csindex_df)
+```
+
+#### 单指数实时行情数据-雪球
+
+接口: stock_zh_index_spot_xq
+
+目标地址: https://xueqiu.com/S/SH000905
+
+描述: 雪球-股票指数-单指数实时行情
+
+限量: 单次返回指定指数的一行行情数据
+
+输入参数
+
+| 名称      | 类型    | 描述                                          |
+|---------|-------|---------------------------------------------|
+| symbol  | str   | symbol="000905"; 支持 000905, csi000905, sh000001, sz399001 |
+| token   | str   | 雪球财经的 token; 默认使用内置 token                  |
+| timeout | float | 请求超时时间, 单位为秒                                |
+
+输出参数同 `stock_zh_index_spot_tx`
+
+接口示例
+
+```python
+import akshare as ak
+
+stock_zh_index_spot_xq_df = ak.stock_zh_index_spot_xq(symbol="000905")
+print(stock_zh_index_spot_xq_df)
+```
+
+#### 单指数实时行情数据-通用
+
+接口: stock_zh_index_spot_realtime
+
+目标地址: https://gu.qq.com/sh000905/zs ; https://www.csindex.com.cn/csindex-home/perf/index-perf-oneday
+
+描述: 股票指数-单指数实时行情; 先使用腾讯实时行情, 若失败则回退到中证官网盘中行情、雪球和新浪实时行情, 仍失败时返回空表; 不使用东方财富, 不使用日频数据兜底
+
+限量: 单次返回指定指数的一行行情数据
+
+输入参数
+
+| 名称      | 类型    | 描述                                          |
+|---------|-------|---------------------------------------------|
+| symbol  | str   | symbol="000905"; 支持 930955, 000905, csi000905, sh000001, sz399001 |
+| token   | str   | 雪球财经的 token; 默认使用内置 token                  |
+| timeout | float | 请求超时时间, 单位为秒                                |
+
+输出参数同 `stock_zh_index_spot_tx`
+
+接口示例
+
+```python
+import akshare as ak
+
+stock_zh_index_spot_realtime_df = ak.stock_zh_index_spot_realtime(symbol="000905")
+print(stock_zh_index_spot_realtime_df)
+```
+
 #### 实时行情数据-新浪
 
 接口: stock_zh_index_spot_sina

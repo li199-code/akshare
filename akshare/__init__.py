@@ -5546,6 +5546,10 @@ from akshare.index.index_stock_zh import (
     stock_zh_index_daily,
     stock_zh_index_spot_sina,
     stock_zh_index_spot_em,
+    stock_zh_index_spot_tx,
+    stock_zh_index_spot_csindex,
+    stock_zh_index_spot_xq,
+    stock_zh_index_spot_realtime,
     stock_zh_index_daily_tx,
     stock_zh_index_daily_em,
 )
