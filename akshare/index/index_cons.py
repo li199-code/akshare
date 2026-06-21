@@ -17,6 +17,31 @@ from bs4 import BeautifulSoup
 from akshare.utils import demjson
 
 
+def _get_csindex_cons_weight_url(symbol: str = "000300") -> str:
+    """
+    中证指数网站-样本权重文件地址
+    """
+    fallback_url = (
+        f"https://oss-ch.csindex.com.cn/static/html/csindex/"
+        f"public/uploads/file/autofile/closeweight/{symbol}closeweight.xls"
+    )
+    url = "https://www.csindex.com.cn/csindex-home/indexInfo/index-details-data"
+    params = {"indexCode": symbol, "fileLang": 2}
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "https://www.csindex.com.cn/",
+    }
+    try:
+        r = requests.get(url, params=params, headers=headers)
+        data_json = r.json()
+        weight_files = data_json.get("data", {}).get("样本权重") or []
+        if weight_files and weight_files[0].get("filePath"):
+            return weight_files[0]["filePath"]
+    except Exception:
+        pass
+    return fallback_url
+
+
 def index_stock_cons_sina(symbol: str = "000300") -> pd.DataFrame:
     """
     新浪新版股票指数成份页面, 目前该接口可获取指数数量较少
@@ -166,10 +191,7 @@ def index_stock_cons_weight_csindex(symbol: str = "000300") -> pd.DataFrame:
     :return: 最新指数的成份股权重
     :rtype: pandas.DataFrame
     """
-    url = (
-        f"https://oss-ch.csindex.com.cn/static/html/csindex/"
-        f"public/uploads/file/autofile/closeweight/{symbol}closeweight.xls"
-    )
+    url = _get_csindex_cons_weight_url(symbol=symbol)
     r = requests.get(url)
     temp_df = pd.read_excel(BytesIO(r.content))
     temp_df.columns = [
