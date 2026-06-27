@@ -37,6 +37,7 @@
    changelog
    fork_sync
    contributing
+   build_wheel
    dependency
    deploy_http
    akdocker/akdocker
