@@ -4023,6 +4023,57 @@ print(fund_etf_scale_sse_df)
 [593 rows x 6 columns]
 ```
 
+#### ETF PCF 持仓估算
+
+接口: fund_etf_hold_pcf
+
+目标地址: https://query.sse.com.cn/etfDownload/downloadETF2Bulletin.do?fundCode=510300
+
+描述: 交易所 ETF PCF 文件解析-持仓成分股权重估算
+
+限量: 单次返回指定 ETF 最新 PCF 文件中的成分股权重估算数据
+
+输入参数
+
+| 名称     | 类型  | 描述            |
+|--------|-----|---------------|
+| symbol | str | symbol="510300"; ETF 代码 |
+
+输出参数
+
+| 名称      | 类型      | 描述 |
+|---------|---------|----|
+| ETF代码   | object  | -  |
+| 交易所     | object  | -  |
+| 交易日     | object  | -  |
+| 股票代码    | object  | -  |
+| 股票简称    | object  | -  |
+| 持仓数量    | float64 | -  |
+| 估算价格    | float64 | -  |
+| 估算市值    | float64 | -  |
+| 权重估算    | float64 | 单位: % |
+| 估算来源    | object  | -  |
+| 现金替代金额  | float64 | -  |
+| 现金替代标志  | object  | -  |
+
+接口示例
+
+```python
+import akshare as ak
+
+fund_etf_hold_pcf_df = ak.fund_etf_hold_pcf(symbol="510300")
+print(fund_etf_hold_pcf_df)
+```
+
+数据示例
+
+```
+    ETF代码  交易所         交易日    股票代码  股票简称    持仓数量  ...  权重估算    估算来源  现金替代金额 现金替代标志
+0   510300  上交所  2026-06-26  000001  平安银行  1500.0  ...  0.3441      行情  15630.0      1
+1   510300  上交所  2026-06-26  000002   万科A  1100.0  ...  0.0714      行情   3245.0      1
+2   510300  上交所  2026-06-26  000063  中兴通讯   500.0  ...  0.4236      行情  19220.0      1
+```
+
 #### ETF 基金份额-深交所
 
 接口: fund_etf_scale_szse

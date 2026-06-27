@@ -494,6 +494,7 @@
  "fund_etf_hist_em"  # 基金历史行情-东财
  "fund_etf_hist_min_em"  # 基金分时行情-东财
  "fund_etf_spot_em"  # 基金实时行情-东财
+ "fund_etf_hold_pcf"  # 交易所 ETF PCF 文件解析-持仓成分股权重估算
  "fund_etf_spot_ths"  # 基金实时行情-同花顺
  # 股票财务报告-预约披露
  "stock_report_disclosure"  # 股票财务报告-预约披露时间

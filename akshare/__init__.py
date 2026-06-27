@@ -3766,6 +3766,11 @@ from akshare.fund.fund_etf_em import (
 )
 
 """
+交易所 ETF PCF 文件解析-持仓成分股权重估算
+"""
+from akshare.fund.fund_etf_pcf import fund_etf_hold_pcf
+
+"""
 上海证券交易所-ETF基金份额数据
 """
 from akshare.fund.fund_etf_sse import fund_etf_scale_sse
