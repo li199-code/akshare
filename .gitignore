@@ -86,3 +86,4 @@ docs/build/
 docs/_build/
 
 *.log
+*.log.*
