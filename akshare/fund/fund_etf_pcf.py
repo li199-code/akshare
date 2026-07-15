@@ -74,7 +74,10 @@ def _fetch_price_map(symbols: list[str]) -> dict[str, float]:
     """
     if not symbols:
         return {}
-    url = "https://88.push2.eastmoney.com/api/qt/ulist.np/get"
+    urls = [
+        "https://88.push2.eastmoney.com/api/qt/ulist.np/get",
+        "https://push2delay.eastmoney.com/api/qt/ulist.np/get",
+    ]
     headers = {
         "Referer": "https://quote.eastmoney.com/",
         "User-Agent": (
@@ -93,15 +96,21 @@ def _fetch_price_map(symbols: list[str]) -> dict[str, float]:
             "fields": "f12,f2",
             "secids": secids,
         }
-        try:
-            r = requests.get(url, params=params, headers=headers, timeout=15)
-            data_json = r.json()
-        except Exception:
-            continue
-        for item in data_json.get("data", {}).get("diff", []):
-            price = _to_float(item.get("f2"))
-            if pd.notna(price) and price > 0:
-                price_map[item.get("f12")] = price
+        for url in urls:
+            try:
+                r = requests.get(url, params=params, headers=headers, timeout=15)
+                r.raise_for_status()
+                data_json = r.json()
+            except Exception:
+                continue
+            diff_list = data_json.get("data", {}).get("diff", [])
+            if not diff_list:
+                continue
+            for item in diff_list:
+                price = _to_float(item.get("f2"))
+                if pd.notna(price) and price > 0:
+                    price_map[item.get("f12")] = price
+            break
     return price_map
 
 
