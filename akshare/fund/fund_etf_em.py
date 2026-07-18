@@ -14,6 +14,157 @@ import requests
 from akshare.utils.func import fetch_paginated_data
 
 
+_FUND_ETF_SPOT_EM_FIELDS = (
+    "f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,"
+    "f12,f13,f14,f15,f16,f17,f18,f20,f21,"
+    "f23,f24,f25,f22,f11,f30,f31,f32,f33,"
+    "f34,f35,f38,f62,f63,f64,f65,f66,f69,"
+    "f72,f75,f78,f81,f84,f87,f115,f124,f128,"
+    "f136,f152,f184,f297,f402,f441"
+)
+
+_FUND_ETF_SPOT_EM_RENAME_MAP = {
+    "f12": "代码",
+    "f14": "名称",
+    "f2": "最新价",
+    "f4": "涨跌额",
+    "f3": "涨跌幅",
+    "f5": "成交量",
+    "f6": "成交额",
+    "f7": "振幅",
+    "f17": "开盘价",
+    "f15": "最高价",
+    "f16": "最低价",
+    "f18": "昨收",
+    "f8": "换手率",
+    "f10": "量比",
+    "f30": "现手",
+    "f31": "买一",
+    "f32": "卖一",
+    "f33": "委比",
+    "f34": "外盘",
+    "f35": "内盘",
+    "f62": "主力净流入-净额",
+    "f184": "主力净流入-净占比",
+    "f66": "超大单净流入-净额",
+    "f69": "超大单净流入-净占比",
+    "f72": "大单净流入-净额",
+    "f75": "大单净流入-净占比",
+    "f78": "中单净流入-净额",
+    "f81": "中单净流入-净占比",
+    "f84": "小单净流入-净额",
+    "f87": "小单净流入-净占比",
+    "f38": "最新份额",
+    "f21": "流通市值",
+    "f20": "总市值",
+    "f402": "基金折价率",
+    "f441": "IOPV实时估值",
+    "f297": "数据日期",
+    "f124": "更新时间",
+}
+
+_FUND_ETF_SPOT_EM_COLUMNS = [
+    "代码",
+    "名称",
+    "最新价",
+    "IOPV实时估值",
+    "基金折价率",
+    "涨跌额",
+    "涨跌幅",
+    "成交量",
+    "成交额",
+    "开盘价",
+    "最高价",
+    "最低价",
+    "昨收",
+    "振幅",
+    "换手率",
+    "量比",
+    "委比",
+    "外盘",
+    "内盘",
+    "主力净流入-净额",
+    "主力净流入-净占比",
+    "超大单净流入-净额",
+    "超大单净流入-净占比",
+    "大单净流入-净额",
+    "大单净流入-净占比",
+    "中单净流入-净额",
+    "中单净流入-净占比",
+    "小单净流入-净额",
+    "小单净流入-净占比",
+    "现手",
+    "买一",
+    "卖一",
+    "最新份额",
+    "流通市值",
+    "总市值",
+    "数据日期",
+    "更新时间",
+]
+
+_FUND_ETF_SPOT_EM_NUMERIC_COLUMNS = [
+    "最新价",
+    "IOPV实时估值",
+    "基金折价率",
+    "涨跌额",
+    "涨跌幅",
+    "成交量",
+    "成交额",
+    "开盘价",
+    "最高价",
+    "最低价",
+    "昨收",
+    "振幅",
+    "换手率",
+    "量比",
+    "委比",
+    "外盘",
+    "内盘",
+    "主力净流入-净额",
+    "主力净流入-净占比",
+    "超大单净流入-净额",
+    "超大单净流入-净占比",
+    "大单净流入-净额",
+    "大单净流入-净占比",
+    "中单净流入-净额",
+    "中单净流入-净占比",
+    "小单净流入-净额",
+    "小单净流入-净占比",
+    "现手",
+    "买一",
+    "卖一",
+    "最新份额",
+    "流通市值",
+    "总市值",
+]
+
+
+def _format_fund_etf_spot_em_df(temp_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    东方财富-ETF 实时行情字段格式化
+    :param temp_df: ETF 实时行情原始数据
+    :type temp_df: pandas.DataFrame
+    :return: ETF 实时行情
+    :rtype: pandas.DataFrame
+    """
+    if temp_df.empty:
+        return pd.DataFrame(columns=_FUND_ETF_SPOT_EM_COLUMNS)
+    temp_df.rename(columns=_FUND_ETF_SPOT_EM_RENAME_MAP, inplace=True)
+    temp_df = temp_df[_FUND_ETF_SPOT_EM_COLUMNS].copy()
+    for item in _FUND_ETF_SPOT_EM_NUMERIC_COLUMNS:
+        temp_df[item] = pd.to_numeric(temp_df[item], errors="coerce")
+    temp_df["数据日期"] = pd.to_datetime(
+        temp_df["数据日期"], format="%Y%m%d", errors="coerce"
+    )
+    temp_df["更新时间"] = (
+        pd.to_datetime(temp_df["更新时间"], unit="s", errors="coerce")
+        .dt.tz_localize("UTC")
+        .dt.tz_convert("Asia/Shanghai")
+    )
+    return temp_df
+
+
 @lru_cache()
 def _fund_etf_code_id_map_em() -> dict:
     """
@@ -60,161 +211,45 @@ def fund_etf_spot_em() -> pd.DataFrame:
         "wbp2u": "|0|0|0|web",
         "fid": "f12",
         "fs": "b:MK0021,b:MK0022,b:MK0023,b:MK0024,b:MK0827",
-        "fields": (
-            "f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,"
-            "f12,f13,f14,f15,f16,f17,f18,f20,f21,"
-            "f23,f24,f25,f22,f11,f30,f31,f32,f33,"
-            "f34,f35,f38,f62,f63,f64,f65,f66,f69,"
-            "f72,f75,f78,f81,f84,f87,f115,f124,f128,"
-            "f136,f152,f184,f297,f402,f441"
-        ),
+        "fields": _FUND_ETF_SPOT_EM_FIELDS,
     }
     temp_df = fetch_paginated_data(url, params)
-    temp_df.rename(
-        columns={
-            "f12": "代码",
-            "f14": "名称",
-            "f2": "最新价",
-            "f4": "涨跌额",
-            "f3": "涨跌幅",
-            "f5": "成交量",
-            "f6": "成交额",
-            "f7": "振幅",
-            "f17": "开盘价",
-            "f15": "最高价",
-            "f16": "最低价",
-            "f18": "昨收",
-            "f8": "换手率",
-            "f10": "量比",
-            "f30": "现手",
-            "f31": "买一",
-            "f32": "卖一",
-            "f33": "委比",
-            "f34": "外盘",
-            "f35": "内盘",
-            "f62": "主力净流入-净额",
-            "f184": "主力净流入-净占比",
-            "f66": "超大单净流入-净额",
-            "f69": "超大单净流入-净占比",
-            "f72": "大单净流入-净额",
-            "f75": "大单净流入-净占比",
-            "f78": "中单净流入-净额",
-            "f81": "中单净流入-净占比",
-            "f84": "小单净流入-净额",
-            "f87": "小单净流入-净占比",
-            "f38": "最新份额",
-            "f21": "流通市值",
-            "f20": "总市值",
-            "f402": "基金折价率",
-            "f441": "IOPV实时估值",
-            "f297": "数据日期",
-            "f124": "更新时间",
-        },
-        inplace=True,
-    )
-    temp_df = temp_df[
-        [
-            "代码",
-            "名称",
-            "最新价",
-            "IOPV实时估值",
-            "基金折价率",
-            "涨跌额",
-            "涨跌幅",
-            "成交量",
-            "成交额",
-            "开盘价",
-            "最高价",
-            "最低价",
-            "昨收",
-            "振幅",
-            "换手率",
-            "量比",
-            "委比",
-            "外盘",
-            "内盘",
-            "主力净流入-净额",
-            "主力净流入-净占比",
-            "超大单净流入-净额",
-            "超大单净流入-净占比",
-            "大单净流入-净额",
-            "大单净流入-净占比",
-            "中单净流入-净额",
-            "中单净流入-净占比",
-            "小单净流入-净额",
-            "小单净流入-净占比",
-            "现手",
-            "买一",
-            "卖一",
-            "最新份额",
-            "流通市值",
-            "总市值",
-            "数据日期",
-            "更新时间",
-        ]
-    ]
-    temp_df["最新价"] = pd.to_numeric(temp_df["最新价"], errors="coerce")
-    temp_df["涨跌额"] = pd.to_numeric(temp_df["涨跌额"], errors="coerce")
-    temp_df["涨跌幅"] = pd.to_numeric(temp_df["涨跌幅"], errors="coerce")
-    temp_df["成交量"] = pd.to_numeric(temp_df["成交量"], errors="coerce")
-    temp_df["成交额"] = pd.to_numeric(temp_df["成交额"], errors="coerce")
-    temp_df["开盘价"] = pd.to_numeric(temp_df["开盘价"], errors="coerce")
-    temp_df["最高价"] = pd.to_numeric(temp_df["最高价"], errors="coerce")
-    temp_df["最低价"] = pd.to_numeric(temp_df["最低价"], errors="coerce")
-    temp_df["昨收"] = pd.to_numeric(temp_df["昨收"], errors="coerce")
-    temp_df["换手率"] = pd.to_numeric(temp_df["换手率"], errors="coerce")
-    temp_df["量比"] = pd.to_numeric(temp_df["量比"], errors="coerce")
-    temp_df["委比"] = pd.to_numeric(temp_df["委比"], errors="coerce")
-    temp_df["外盘"] = pd.to_numeric(temp_df["外盘"], errors="coerce")
-    temp_df["内盘"] = pd.to_numeric(temp_df["内盘"], errors="coerce")
-    temp_df["流通市值"] = pd.to_numeric(temp_df["流通市值"], errors="coerce")
-    temp_df["总市值"] = pd.to_numeric(temp_df["总市值"], errors="coerce")
-    temp_df["振幅"] = pd.to_numeric(temp_df["振幅"], errors="coerce")
-    temp_df["现手"] = pd.to_numeric(temp_df["现手"], errors="coerce")
-    temp_df["买一"] = pd.to_numeric(temp_df["买一"], errors="coerce")
-    temp_df["卖一"] = pd.to_numeric(temp_df["卖一"], errors="coerce")
-    temp_df["最新份额"] = pd.to_numeric(temp_df["最新份额"], errors="coerce")
-    temp_df["IOPV实时估值"] = pd.to_numeric(temp_df["IOPV实时估值"], errors="coerce")
-    temp_df["基金折价率"] = pd.to_numeric(temp_df["基金折价率"], errors="coerce")
-    temp_df["主力净流入-净额"] = pd.to_numeric(
-        temp_df["主力净流入-净额"], errors="coerce"
-    )
-    temp_df["主力净流入-净占比"] = pd.to_numeric(
-        temp_df["主力净流入-净占比"], errors="coerce"
-    )
-    temp_df["超大单净流入-净额"] = pd.to_numeric(
-        temp_df["超大单净流入-净额"], errors="coerce"
-    )
-    temp_df["超大单净流入-净占比"] = pd.to_numeric(
-        temp_df["超大单净流入-净占比"], errors="coerce"
-    )
-    temp_df["大单净流入-净额"] = pd.to_numeric(
-        temp_df["大单净流入-净额"], errors="coerce"
-    )
-    temp_df["大单净流入-净占比"] = pd.to_numeric(
-        temp_df["大单净流入-净占比"], errors="coerce"
-    )
-    temp_df["中单净流入-净额"] = pd.to_numeric(
-        temp_df["中单净流入-净额"], errors="coerce"
-    )
-    temp_df["中单净流入-净占比"] = pd.to_numeric(
-        temp_df["中单净流入-净占比"], errors="coerce"
-    )
-    temp_df["小单净流入-净额"] = pd.to_numeric(
-        temp_df["小单净流入-净额"], errors="coerce"
-    )
-    temp_df["小单净流入-净占比"] = pd.to_numeric(
-        temp_df["小单净流入-净占比"], errors="coerce"
-    )
-    temp_df["数据日期"] = pd.to_datetime(
-        temp_df["数据日期"], format="%Y%m%d", errors="coerce"
-    )
-    temp_df["更新时间"] = (
-        pd.to_datetime(temp_df["更新时间"], unit="s", errors="coerce")
-        .dt.tz_localize("UTC")
-        .dt.tz_convert("Asia/Shanghai")
-    )
-    return temp_df
+    return _format_fund_etf_spot_em_df(temp_df)
+
+
+def fund_etf_spot_individual_em(symbol: str = "510300") -> pd.DataFrame:
+    """
+    东方财富-ETF 实时行情-单只
+    https://quote.eastmoney.com/sh510300.html
+    :param symbol: ETF 代码
+    :type symbol: str
+    :return: 单只 ETF 实时行情
+    :rtype: pandas.DataFrame
+    """
+    params = {
+        "fltt": "2",
+        "invt": "2",
+        "ut": "bd1d9ddb04089700cf9c27f6f7426281",
+        "fields": _FUND_ETF_SPOT_EM_FIELDS,
+        "secids": f"{get_market_id(symbol)}.{symbol}",
+    }
+    last_exception = None
+    for url in [
+        "https://push2.eastmoney.com/api/qt/ulist.np/get",
+        "https://push2delay.eastmoney.com/api/qt/ulist.np/get",
+    ]:
+        try:
+            r = requests.get(url, timeout=15, params=params)
+            data_json = r.json()
+        except requests.RequestException as exc:
+            last_exception = exc
+            continue
+        if data_json.get("data") and data_json["data"].get("diff"):
+            temp_df = pd.DataFrame(data_json["data"]["diff"])
+            return _format_fund_etf_spot_em_df(temp_df)
+    if last_exception:
+        raise last_exception
+    return pd.DataFrame(columns=_FUND_ETF_SPOT_EM_COLUMNS)
 
 
 def get_market_id(symbol: str) -> int:

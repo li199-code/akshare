@@ -3762,6 +3762,7 @@ from akshare.stock_fundamental.stock_zyjs_ths import stock_zyjs_ths
 from akshare.fund.fund_etf_em import (
     fund_etf_hist_em,
     fund_etf_hist_min_em,
+    fund_etf_spot_individual_em,
     fund_etf_spot_em,
 )
 

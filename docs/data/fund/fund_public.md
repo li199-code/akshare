@@ -372,6 +372,43 @@ print(fund_etf_spot_em_df)
 [1010 rows x 37 columns]
 ```
 
+#### ETF基金实时行情-东财-单只
+
+接口: fund_etf_spot_individual_em
+
+目标地址: https://quote.eastmoney.com/sh510300.html
+
+描述: 东方财富-ETF 实时行情-单只
+
+限量: 单次返回指定 ETF 的实时行情数据
+
+输入参数
+
+| 名称     | 类型  | 描述           |
+|--------|-----|--------------|
+| symbol | str | symbol="510300"; ETF 代码 |
+
+输出参数
+
+同 `fund_etf_spot_em` 接口
+
+接口示例
+
+```python
+import akshare as ak
+
+fund_etf_spot_individual_em_df = ak.fund_etf_spot_individual_em(symbol="510300")
+print(fund_etf_spot_individual_em_df)
+```
+
+数据示例
+
+```
+       代码            名称    最新价  ...        总市值       数据日期                      更新时间
+0  510300  沪深300ETF华泰柏瑞  4.589  ...  90410126670 2026-07-17 2026-07-17 16:11:44+08:00
+[1 rows x 37 columns]
+```
+
 #### 基金实时行情-同花顺
 
 接口: fund_etf_category_ths
