@@ -2796,6 +2796,8 @@ print(fund_individual_achievement_xq_df)
 
 限量: 单次返回当前交易日指定 symbol 的所有数据
 
+说明: 非交易时段若上游返回“暂无数据”，则返回空的 `pandas.DataFrame`，不再抛出异常
+
 输入参数
 
 | 名称     | 类型  | 描述                                                                                                    |
@@ -3138,7 +3140,7 @@ print(fund_individual_detail_info_xq_df)
 | 名称     | 类型  | 描述                                                       |
 |--------|-----|----------------------------------------------------------|
 | symbol | str | symbol="000001"; 基金代码, 可以通过调用 **ak.fund_name_em()** 接口获取 |
-| date   | str | date="2024"; 指定年份                                        |
+| date   | str | date="2024"; 指定年份, 传入空字符串 `""` 时返回最新可用年份数据          |
 
 输出参数
 
@@ -3181,7 +3183,7 @@ print(fund_portfolio_hold_em_df)
 
 接口: fund_portfolio_bond_hold_em
 
-目标地址: https://fundf10.eastmoney.com/ccmx_000001.html
+目标地址: https://fundf10.eastmoney.com/ccmx1_000001.html
 
 描述: 天天基金网-基金档案-投资组合-债券持仓
 
