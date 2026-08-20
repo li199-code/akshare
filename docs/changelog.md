@@ -89,6 +89,85 @@
 
 ## 更新说明详情
 
+1.18.92 fix: improve Xueqiu login requirement guidance
+
+    1. 优化 stock_individual_basic_info_xq 系列接口在雪球返回 400016 时的提示信息，明确匿名访问当前受限且需要通过 `token=` 传入有效 `xq_a_token`
+    2. 补充中概股、美股、港股雪球公司信息接口的登录态依赖说明
+
+1.18.91 docs: migrate the Markdown parser to myst-parser
+
+    1. 文档 Markdown 解析器由 recommonmark 迁移至 myst-parser，并移除随之无用的 sphinx-markdown-tables 与 markdown 依赖
+    2. 修正 docs 目录下 25 个文件的标题层级，使每个页面具备唯一的一级标题且不再跳级
+    3. 接口条目层级调整后可生成锚点，文档站中每个接口均支持直接链接定位
+    4. 为 dependabot 增加依赖分组配置，避免多个拉取请求同时修改同一文件
+
+1.18.90 build: declare __all__ and drop the akqmt integration
+
+    1. 为 akshare 声明 __all__，由 scripts/build_registry.py 生成并纳入 CI 校验
+    2. 修复 from akshare import * 会额外导出 39 个子模块名的问题
+    3. 移除 akqmt 集成及 full、qmt 两个附加依赖组
+    4. 修正 README 中的 Python 版本要求、失效的仓库条幅与错误的代码风格条幅
+
+1.18.89 build: raise the minimum supported Python version to 3.11
+
+    1. 将 requires-python 提升至 3.11 以上，并同步 classifiers、CI 测试矩阵与 ruff target-version
+    2. 修复 uv.lock 中为 Python 3.9 保留的旧版本解析分支所引发的 24 条依赖安全告警
+    3. 新增 dependabot 配置，自动跟进 uv 与 GitHub Actions 的依赖更新
+    4. 同步更新文档中关于 Python 最低版本的说明
+
+1.18.88 fix: fix fund_portfolio_hold_em interface
+
+    1. 修复 fund_portfolio_hold_em 接口
+
+1.18.87 fix: fix interface docs
+
+    1. 修复接口文档中接口半角符号问题
+
+1.18.86 fix: fix interface docs
+
+    1. 修复接口文档中接口半角符号问题
+
+1.18.85 feat: add interface registry search API
+
+    1. 新增 ak.search 接口检索功能，支持按接口名精确定位与关键词模糊检索
+    2. 新增 ak.interface_info 接口元数据查询功能
+    3. 新增 ak.list_categories 类目列表功能
+    4. 新增 CI 门禁，校验文档与接口导出的一致性
+
+1.18.84 fix: fix index_all_cni interface
+
+    1. 修复 index_all_cni 接口因国证指数返回体新增字段而触发 Length mismatch 的问题
+    2. 修复 sw_index_third_cons 接口因乐咕乐股申万三级行业表头变化而触发 Length mismatch 的问题
+
+1.18.83 fix: fix fund_portfolio_hold_em interface
+
+    1. 修复 fund_etf_fund_info_em 接口因东方财富历史净值返回体新增字段而触发 Length mismatch 的问题
+    2. 修复 fund_financial_fund_info_em 接口因 `pageSize=10000` 失效导致返回空数据的问题
+    3. 修复 fund_graded_fund_info_em 接口因东方财富历史净值返回体新增字段而触发 Length mismatch 的问题
+
+
+1.18.82 fix: fix fund_portfolio_hold_em interface
+
+    1. 修复 fund_portfolio_hold_em 接口因东方财富 `topline=10000` 失效而只能返回首屏摘要持仓的问题
+    2. 修复 stock_szse_sector_summary 接口在查询深交所尚未发布月份时直接抛出 KeyError 的问题
+    3. 修复 fund_etf_fund_info_em 接口因东方财富历史净值返回体新增字段而触发 Length mismatch 的问题
+    4. 修复 fund_financial_fund_info_em 接口因 `pageSize=10000` 失效导致返回空数据的问题
+    5. 修复 fund_graded_fund_info_em 接口因东方财富历史净值返回体新增字段而触发 Length mismatch 的问题
+
+1.18.81 fix: fix fund_value_estimation_em interface
+
+    1. 修复 fund_value_estimation_em 接口在东方财富旧统一估值接口失效后持续返回空结果的问题
+
+1.18.80 fix: fix Xueqiu stock info interfaces
+
+    1. 修复 stock_individual_basic_info_xq 系列接口在雪球返回登录态错误时抛出 KeyError 的问题
+    2. 修复 stock_individual_spot_xq 接口在雪球返回登录态错误时抛出 KeyError 的问题
+    3. 加固雪球热榜和内部交易接口的异常处理与空结果兜底逻辑
+
+1.18.79 fix: fix amac_aoin_info interface
+
+    1. 修复 amac_aoin_info 接口因 AMAC 分页参数变更导致的 JSONDecodeError 问题
+
 1.18.78 fix: fix fund_value_estimation_em interface
 
     1. 修复 fund_value_estimation_em 接口
@@ -4718,7 +4797,7 @@
 
 1.8.42 add: add get_gfex_daily interface
 
-    1. 新增 get_gfex_daily 接口, 获取广期所的量价数据
+    1. 新增 get_gfex_daily 接口，获取广期所的量价数据
 
 1.8.41 add: add futures_index_ccidx interface
 
