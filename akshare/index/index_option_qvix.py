@@ -8,21 +8,34 @@ http://1.optbbs.com/s/vix.shtml?50ETF
 http://1.optbbs.com/s/vix.shtml?300ETF
 """
 
-import pandas as pd
 from functools import lru_cache
+from time import monotonic
+
+import pandas as pd
 
 
-@lru_cache
-def __get_optbbs_daily() -> pd.DataFrame:
+_OPTBBS_DAILY_CACHE_TTL = 300
+
+
+@lru_cache(maxsize=2)
+def __get_optbbs_daily_cached(cache_bucket: int) -> pd.DataFrame:
     """
     读取原始数据
     http://1.optbbs.com/d/csv/d/k.csv
+    :param cache_bucket: 缓存时间桶
+    :type cache_bucket: int
     :return: 原始数据
     :rtype: pandas.DataFrame
     """
     url = "http://1.optbbs.com/d/csv/d/k.csv"
     temp_df = pd.read_csv(url, encoding="gbk")
     return temp_df
+
+
+def __get_optbbs_daily() -> pd.DataFrame:
+    """读取带有短期缓存的原始数据。"""
+    cache_bucket = int(monotonic() // _OPTBBS_DAILY_CACHE_TTL)
+    return __get_optbbs_daily_cached(cache_bucket=cache_bucket).copy()
 
 
 def index_option_50etf_qvix() -> pd.DataFrame:
